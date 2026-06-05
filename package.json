@@ -1,7 +1,7 @@
 {
   "name": "nepal-cas-backend",
   "version": "1.0.0",
-  "description": "CAS Ledger Engine Operational Infrastructure",
+  "description": "Centralized Academic Cloud Backend Node",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -12,5 +12,8 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
