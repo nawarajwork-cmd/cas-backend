@@ -34,23 +34,33 @@ const authorizeGateway = (req, res, next) => {
 app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     
-    // Explicit 400 Bad Request prevention check
     if (!username || !password) {
-        return res.status(400).json({ error: 'Missing username or password variables.' });
+        return res.status(400).json({ error: 'Missing username or password fields.' });
     }
 
     try {
+        // DEBUG LOG: Let's see what the frontend sent in the server logs
+        console.log(`Attempting login for username: ${username}`);
+
         const userQuery = await pool.query('SELECT * FROM users WHERE LOWER(username) = LOWER($1)', [username.trim()]);
         const user = userQuery.rows[0];
         
-        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-            return res.status(400).json({ error: 'Invalid user credentials.' });
+        if (!user) {
+            // DEBUG CHANGER: Tell us if the username simply isn't found
+            return res.status(400).json({ error: `Database check failed: Username '${username}' does not exist in the table.` });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        if (!isPasswordValid) {
+            // DEBUG CHANGER: Tell us if the password hashing is mismatched
+            return res.status(400).json({ error: 'Database check failed: Password hash encryption mismatch.' });
         }
 
         const token = jwt.sign({ id: user.id, role: user.role, name: user.full_name }, JWT_SECRET, { expiresIn: '12h' });
         res.json({ token, role: user.role, name: user.full_name });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        // DEBUG CHANGER: If the database crashed or column names are wrong, pass the error string directly to the client
+        res.status(400).json({ error: `Database Engine Crash: ${err.message}` });
     }
 });
 
