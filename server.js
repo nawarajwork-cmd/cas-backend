@@ -30,15 +30,36 @@ const saveFullState = async (state) => {
 // --- AUTH ROUTE ---
 app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Missing credentials.' });
+    }
+
     try {
-        const userQuery = await pool.query('SELECT * FROM users WHERE LOWER(username) = LOWER($1)', [username.trim()]);
+        // Query the 'users' table in PostgreSQL
+        const userQuery = await pool.query(
+            'SELECT * FROM users WHERE LOWER(username) = LOWER($1)', 
+            [username.trim()]
+        );
+        
         const user = userQuery.rows[0];
+        
+        // Check if user exists and compare password hash
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-            return res.status(400).json({ error: 'Invalid credentials.' });
+            return res.status(401).json({ error: 'Invalid node credentials.' });
         }
-        const token = jwt.sign({ id: user.id, role: user.role, name: user.full_name }, JWT_SECRET, { expiresIn: '12h' });
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, role: user.role, name: user.full_name }, 
+            JWT_SECRET, 
+            { expiresIn: '12h' }
+        );
+        
         res.json({ token, role: user.role, name: user.full_name });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { 
+        res.status(500).json({ error: 'Database connection error: ' + err.message }); 
+    }
 });
 
 // --- ADMIN STATE ROUTES ---
