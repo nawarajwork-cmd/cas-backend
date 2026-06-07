@@ -767,35 +767,63 @@ app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
 
 // ================= CURRICULUM =================
 
-app.get('/api/teacher/chapters', authorizeGateway, async (req, res) => {
+app.get(
+  '/api/teacher/chapters',
+  authorizeGateway,
+  async (req, res) => {
 
-  const teacherId = req.user.id;
+    try {
 
-  try {
-    const result = await pool.query(`
-      SELECT 
-        c.id AS chapter_id,
-        c.chapter_name,
-        s.subject_code,
-        COALESCE(tcs.is_selected, false) AS is_selected
-      FROM chapters c
-      JOIN subjects s ON s.id = c.subject_id
-      JOIN teacher_subject_assignments tsa 
-        ON tsa.subject_id = s.id
-      LEFT JOIN teacher_chapter_selection tcs
-        ON tcs.chapter_id = c.id
-        AND tcs.teacher_id = tsa.teacher_id
-      WHERE tsa.teacher_id = $1
-      ORDER BY c.id
-    `, [teacherId]);
+      const teacherId = req.user.id;
 
-    res.json(result.rows);
+      const result = await pool.query(`
 
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+        SELECT DISTINCT
+
+          ch.id AS chapter_id,
+
+          ch.chapter_name,
+
+          sub.subject_code,
+
+          COALESCE(
+            tcs.is_selected,
+            false
+          ) AS is_selected
+
+        FROM teacher_subject_assignments tsa
+
+        JOIN subjects sub
+        ON sub.id = tsa.subject_id
+
+        JOIN chapters ch
+        ON ch.subject_id = sub.id
+
+        LEFT JOIN teacher_chapter_selection tcs
+        ON
+          tcs.chapter_id = ch.id
+          AND
+          tcs.teacher_id = tsa.teacher_id
+
+        WHERE tsa.teacher_id = $1
+
+        ORDER BY
+          sub.subject_code,
+          ch.chapter_name
+
+      `, [teacherId]);
+
+      res.json(result.rows);
+
+    } catch(err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        error: err.message
+      });
+    }
 });
-
 
 app.get('/api/curriculum',
 authorizeGateway,
