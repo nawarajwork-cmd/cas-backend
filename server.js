@@ -975,48 +975,36 @@ async (req, res) => {
 
 // ================= STUDENTS =================
 
-app.get('/api/students',
-authorizeGateway,
-async (req, res) => {
+app.get('/api/students', authorizeGateway, async (req, res) => {
 
-    const { grade } = req.query;
+  const { grade } = req.query;
 
-    try {
+  if (!grade) {
+    return res.status(400).json({ error: "Grade is required" });
+  }
 
-        const students =
-            await pool.query(`
-                SELECT *
-                FROM students
-                WHERE grade_level = $1
-                ORDER BY roll_number
-            `, [grade]);
+  try {
+    const students = await pool.query(`
+      SELECT * FROM students
+      WHERE grade_level = $1
+      ORDER BY roll_number
+    `, [grade]);
 
-        const marks =
-            await pool.query(`
-                SELECT
-                    m.student_id,
-                    m.theme_id,
-                    m.score
+    const marks = await pool.query(`
+      SELECT m.student_id, m.theme_id, m.score
+      FROM marks m
+      JOIN students s ON s.id = m.student_id
+      WHERE s.grade_level = $1
+    `, [grade]);
 
-                FROM marks m
+    res.json({
+      students: students.rows,
+      marks: marks.rows
+    });
 
-                JOIN students s
-                ON s.id = m.student_id
-
-                WHERE s.grade_level = $1
-            `, [grade]);
-
-        res.json({
-            students: students.rows,
-            marks: marks.rows
-        });
-
-    } catch(err) {
-
-        res.status(500).json({
-            error: err.message
-        });
-    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // BULK STUDENTS
