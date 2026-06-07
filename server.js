@@ -30,8 +30,16 @@ const authorizeGateway = (req, res, next) => {
     });
 };
 
-// --- AUTH ROUTE WITH SYSTEM VALIDATION FIX ---
-app.post('/api/auth/login', async (req, res) => {
+// REPLACE your current jwt.sign call with this:
+const token = jwt.sign(
+    { username: user.username, role: user.role }, // Ensure 'role' is in the database user record
+    JWT_SECRET, 
+    { expiresIn: '8h' }
+);
+
+/*
+//--- AUTH ROUTE WITH SYSTEM VALIDATION FIX ---
+ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
@@ -73,6 +81,7 @@ app.post('/api/auth/login', async (req, res) => {
         res.status(400).json({ error: `Database Engine Crash: ${err.message}` });
     }
 });
+*/
 
 // --- ENGINE PROFILE ENDPOINTS ---
 app.get('/api/profile', authorizeGateway, async (req, res) => {
@@ -198,16 +207,47 @@ app.post('/api/marks/save', authorizeGateway, async (req, res) => {
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
-// --- ADMIN MANAGEMENT ROUTES ---
+// --- ADMIN MANAGEMENT ROUTES (Checkpoint 2) ---
 
-// 1. Create Teacher
+// 1. Create Teacher (Auto-generates T-1, T-2 IDs)
 app.post('/api/admin/teachers', authorizeGateway, async (req, res) => {
-    // ... logic from previous response ...
+    // Check if requester is admin
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access Denied' });
+
+    try {
+        // Count existing teachers to generate sequential ID
+        const countRes = await pool.query('SELECT COUNT(*) FROM teachers');
+        const nextIdNum = parseInt(countRes.rows[0].count) + 1;
+        const newUsername = `T-${nextIdNum}`;
+        const defaultPassword = '9876';
+
+        await pool.query(
+            'INSERT INTO teachers (username, password) VALUES ($1, $2)',
+            [newUsername, defaultPassword]
+        );
+
+        res.json({ success: true, teacher: { username: newUsername, password: defaultPassword } });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
-// 2. Assign Subject to Teacher
+// 2. Assign Subject to Teacher (Bridge Logic)
 app.post('/api/admin/assign', authorizeGateway, async (req, res) => {
-    // ... logic from previous response ...
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access Denied' });
+    
+    const { teacher_id, subject_id } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO teacher_assignments (teacher_id, subject_id) VALUES ($1, $2)', 
+            [teacher_id, subject_id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Assignment failed' });
+    }
 });
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing safely on port ${PORT}`));
