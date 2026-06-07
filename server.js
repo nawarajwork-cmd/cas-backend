@@ -172,6 +172,28 @@ async function initializeDatabase() {
             grade_level VARCHAR(20) NOT NULL
         );
     `);
+  // TEACHER CHAPTER SELECTION
+
+await pool.query(`
+    CREATE TABLE IF NOT EXISTS teacher_chapter_selection (
+
+        id SERIAL PRIMARY KEY,
+
+        teacher_id INTEGER
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+        chapter_id INTEGER
+        REFERENCES chapters(id)
+        ON DELETE CASCADE,
+
+        is_selected BOOLEAN DEFAULT false,
+
+        updated_at TIMESTAMP DEFAULT NOW(),
+
+        UNIQUE(teacher_id, chapter_id)
+    );
+`);
 
     // DEFAULT ADMIN
     const adminCheck =
