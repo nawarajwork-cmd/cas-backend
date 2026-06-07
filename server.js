@@ -11,9 +11,20 @@ app.get('/', (req, res) => {
     res.send('Backend Running');
 });
 
+const allowedOrigins = [
+  "https://nawarajwork-cmd.github.io",
+  "http://localhost:3000"
+];
+
 app.use(cors({
-    origin: 'https://nawarajwork-cmd.github.io',
-    credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
 
 
