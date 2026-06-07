@@ -198,6 +198,16 @@ app.post('/api/marks/save', authorizeGateway, async (req, res) => {
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+// --- ADMIN MANAGEMENT ROUTES ---
 
+// 1. Create Teacher
+app.post('/api/admin/teachers', authorizeGateway, async (req, res) => {
+    // ... logic from previous response ...
+});
+
+// 2. Assign Subject to Teacher
+app.post('/api/admin/assign', authorizeGateway, async (req, res) => {
+    // ... logic from previous response ...
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing safely on port ${PORT}`));
