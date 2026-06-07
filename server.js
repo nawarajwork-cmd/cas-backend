@@ -1,4 +1,4 @@
-const express = require('express');
+	const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
@@ -22,7 +22,14 @@ const authorizeGateway = (req, res, next) => {
     const header = req.headers['authorization'];
     const token = header && header.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Session unauthorized. Access Denied.' });
-
+	// This ensures that only users with the 'admin' role can proceed
+const requireAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ error: 'Access Denied: Admin only.' });
+    }
+};
     jwt.verify(token, JWT_SECRET, (err, decodedUser) => {
         if (err) return res.status(403).json({ error: 'Session expired.' });
         req.user = decodedUser;
@@ -30,14 +37,8 @@ const authorizeGateway = (req, res, next) => {
     });
 };
 
-// REPLACE your current jwt.sign call with this:
-const token = jwt.sign(
-    { username: user.username, role: user.role }, // Ensure 'role' is in the database user record
-    JWT_SECRET, 
-    { expiresIn: '8h' }
-);
 
-/*
+
 //--- AUTH ROUTE WITH SYSTEM VALIDATION FIX ---
  app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
@@ -61,7 +62,7 @@ const token = jwt.sign(
             console.log("Programmatic database reset execution successful.");
         }
         // ========================================================
-
+        
         // Run standard login verification routine
         const userQuery = await pool.query('SELECT * FROM users WHERE LOWER(username) = LOWER($1)', [username.trim()]);
         const user = userQuery.rows[0];
@@ -75,13 +76,19 @@ const token = jwt.sign(
             return res.status(400).json({ error: 'Database check failed: Password hash encryption mismatch.' });
         }
 
-        const token = jwt.sign({ id: user.id, role: user.role, name: user.full_name }, JWT_SECRET, { expiresIn: '12h' });
-        res.json({ token, role: user.role, name: user.full_name });
+// Inside your login route, after verifying the password:
+// Ensure your database query fetched the 'role' column from the users table
+const token = jwt.sign(
+    { username: user.username, role: user.role }, // The 'role' is now included in the token
+    JWT_SECRET, 
+    { expiresIn: '8h' }
+);
+res.json({ token, role: user.role });
     } catch (err) {
         res.status(400).json({ error: `Database Engine Crash: ${err.message}` });
     }
 });
-*/
+
 
 // --- ENGINE PROFILE ENDPOINTS ---
 app.get('/api/profile', authorizeGateway, async (req, res) => {
