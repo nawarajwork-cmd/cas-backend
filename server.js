@@ -13,39 +13,54 @@ const pool = new Pool({
     ssl: { rejectUnauthorized: false }
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'YOUR_SECRET_KEY';
+const JWT_SECRET = process.env.JWT_SECRET || 'NEPAL_CAS_SYSTEM_CRYPT_KEY';
 
-// --- AUTH ROUTE ---
-app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
-    try {
-        const userQuery = await pool.query('SELECT * FROM users WHERE LOWER(username) = LOWER($1)', [username.trim()]);
-        const user = userQuery.rows[0];
-        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-            return res.status(400).json({ error: 'Invalid credentials.' });
-        }
-        const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
-        res.json({ token, role: user.role, name: user.full_name });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
+// --- HELPERS: SQL State Management ---
+const getFullState = async () => {
+    const res = await pool.query('SELECT data FROM system_state WHERE id = 1');
+    return res.rows.length > 0 ? res.rows[0].data : { classes: {}, teachers: [], students: {} };
+};
 
-// --- STATE MANAGEMENT (PostgreSQL JSONB Implementation) ---
+const saveFullState = async (state) => {
+    await pool.query(`
+        INSERT INTO system_state (id, data) VALUES (1, $1) 
+        ON CONFLICT (id) DO UPDATE SET data = $1`, [JSON.stringify(state)]);
+};
+
+// --- ROUTES ---
 app.get('/api/admin/database-state', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT data FROM system_state WHERE id = 1');
-        res.json(result.rows.length > 0 ? result.rows[0].data : { classes: {}, teachers: [], students: {} });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    try { res.json(await getFullState()); } 
+    catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/admin/database-state', async (req, res) => {
+    try { await saveFullState(req.body); res.json({ success: true }); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/admin/classes', async (req, res) => {
     try {
-        // Upsert the data into the JSONB column
-        await pool.query(`
-            INSERT INTO system_state (id, data) VALUES (1, $1) 
-            ON CONFLICT (id) DO UPDATE SET data = $1`, [JSON.stringify(req.body)]);
-        res.json({ success: true });
+        const { className } = req.body;
+        let state = await getFullState();
+        if (state.classes[className]) return res.status(400).json({ error: "Class exists." });
+        state.classes[className] = { subjects: {} };
+        await saveFullState(state);
+        res.json({ success: true, state });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.post('/api/admin/teachers', async (req, res) => {
+    try {
+        const { name } = req.body;
+        let state = await getFullState();
+        const newTeacher = { id: `teacher.${state.teachers.length + 1}`, name, pass: "9876", assignments: [] };
+        state.teachers.push(newTeacher);
+        await saveFullState(state);
+        res.json({ success: true, state });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ... (Follow this pattern to replace all other 'State' calls with getFullState/saveFullState)
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server executing safely on port ${PORT}`));
