@@ -900,6 +900,26 @@ async (req, res) => {
     }
 });
 
+
+app.put('/api/curriculum/chapter/:id', authorizeGateway, async (req, res) => {
+
+  const { chapter_name } = req.body;
+
+  try {
+    await pool.query(`
+      UPDATE chapters
+      SET chapter_name = $1
+      WHERE id = $2
+    `, [chapter_name, req.params.id]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // CREATE THEME
 app.post('/api/curriculum/theme',
 authorizeGateway,
@@ -939,6 +959,25 @@ async (req, res) => {
         });
     }
 });
+
+app.put('/api/curriculum/theme/:id', authorizeGateway, async (req, res) => {
+
+  const { theme_name } = req.body;
+
+  try {
+    await pool.query(`
+      UPDATE themes
+      SET theme_name = $1
+      WHERE id = $2
+    `, [theme_name, req.params.id]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // TOGGLE CHAPTER
 app.put('/api/curriculum/chapter/:id/toggle',
