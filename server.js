@@ -299,13 +299,13 @@ JWT_SECRET,
     expiresIn: '12h'
 });
 
+res.json({
+    token,
+    role: user.role.toUpperCase(),
+    name: user.full_name
+});
 
 
-        res.json({
-            token,
-            role: user.role,
-            name: user.full_name
-        });
 
     } catch(err) {
 
