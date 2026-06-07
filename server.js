@@ -288,17 +288,18 @@ if(role && role !== user.role) {
             });
         }
 
-        const token = jwt.sign(
-            {
-                id: user.id,
-                role: user.role,
-                name: user.full_name
-            },
-            JWT_SECRET,
-            {
-                expiresIn: '12h'
-            }
-        );
+const token = jwt.sign(
+{
+    id: user.id,
+    role: user.role.toUpperCase(),
+    name: user.full_name
+},
+JWT_SECRET,
+{
+    expiresIn: '12h'
+});
+
+
 
         res.json({
             token,
