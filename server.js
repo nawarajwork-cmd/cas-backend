@@ -59,7 +59,54 @@ app.post('/api/admin/teachers', async (req, res) => {
         res.json({ success: true, state });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+// 4. CREATE SUBJECT
+app.post('/api/admin/subjects', async (req, res) => {
+    try {
+        const { className, subjectName } = req.body;
+        let state = await getFullState();
+        if (!state.classes[className]) return res.status(404).json({ error: "Class not found." });
+        state.classes[className].subjects[subjectName.trim().toUpperCase()] = [];
+        await saveFullState(state);
+        res.json({ success: true, state });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
+// 6. UPDATE TEACHER
+app.put('/api/admin/teachers/:id', async (req, res) => {
+    try {
+        const { name, pass } = req.body;
+        let state = await getFullState();
+        let teacher = state.teachers.find(t => t.id === req.params.id);
+        if (!teacher) return res.status(404).json({ error: "Teacher not found." });
+        if (name) teacher.name = name.trim();
+        if (pass) teacher.pass = pass.trim();
+        await saveFullState(state);
+        res.json({ success: true, state });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 7. ASSIGN TEACHER
+app.post('/api/admin/assignments', async (req, res) => {
+    try {
+        const { teacherId, className, subjectName } = req.body;
+        let state = await getFullState();
+        let teacher = state.teachers.find(t => t.id === teacherId);
+        if (!teacher) return res.status(404).json({ error: "Teacher not found." });
+        teacher.assignments.push({ class: className, subject: subjectName });
+        await saveFullState(state);
+        res.json({ success: true, state });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 9. DELETE TEACHER
+app.delete('/api/admin/teachers/:id', async (req, res) => {
+    try {
+        let state = await getFullState();
+        state.teachers = state.teachers.filter(t => t.id !== req.params.id);
+        await saveFullState(state);
+        res.json({ success: true, state });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 // ... (Follow this pattern to replace all other 'State' calls with getFullState/saveFullState)
 
 const PORT = process.env.PORT || 3000;
