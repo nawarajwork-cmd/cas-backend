@@ -99,6 +99,23 @@ app.get('/api/admin/dashboard-data', authorizeGateway, requireAdmin, async (req,
         res.status(500).json({ error: 'Failed to fetch dashboard data' });
     }
 });
+// --- ANALYTICS ROUTE ---
+app.get('/api/admin/analytics', authorizeGateway, requireAdmin, async (req, res) => {
+    try {
+        const stats = await pool.query(`
+            SELECT 
+                s.name as subject_name, 
+                COUNT(m.id) as total_marks_recorded, 
+                AVG(m.score) as average_score
+            FROM subjects s
+            LEFT JOIN marks m ON s.id = m.theme_id
+            GROUP BY s.name
+        `);
+        res.json(stats.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Analytics fetch failed' });
+    }
+});
 
 // --- EXISTING CORE ROUTES ---
 app.post('/api/marks/save', authorizeGateway, async (req, res) => {
