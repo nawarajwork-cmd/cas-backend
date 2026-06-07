@@ -1168,4 +1168,3 @@ initializeDatabase()
 
     console.log(err);
 });
-```
