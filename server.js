@@ -1223,8 +1223,9 @@ app.get('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
     const result = await pool.query(`
       SELECT 
         tsa.id,
+        u.id AS teacher_id,
         u.full_name AS teacher_name,
-        u.username,
+        s.id AS subject_id,
         s.subject_code,
         tsa.grade_level
       FROM teacher_subject_assignments tsa
