@@ -1,5 +1,5 @@
 {
-  "name": "nepal-cas-backend",
+  "name": "cas-backend",
   "version": "1.0.0",
   "description": "Centralized Academic Cloud Backend Node",
   "main": "server.js",
