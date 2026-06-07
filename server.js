@@ -25,7 +25,7 @@ const authorize = (role) => (req, res, next) => {
 };
 const cors = require('cors');
 app.use(cors({
-    origin: "*", // Or replace * with "https://your-username.github.io"
+    origin: "https://nawarajwork-cmd.github.io", // Or replace * with "https://your-username.github.io"
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
