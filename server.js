@@ -209,6 +209,36 @@ app.post('/api/marks/save', authorizeGateway, async (req, res) => {
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+// =================================================================
+// PASTE THE NEW CRUD ROUTES HERE (AFTER AUTH, BEFORE APP.LISTEN)
+// =================================================================
+
+// 1. GET CURRENT STATE
+app.get('/api/admin/database-state', async (req, res) => { /* ... code ... */ });
+
+// 2. SAVE FULL BULK STATE
+app.post('/api/admin/database-state', async (req, res) => { /* ... code ... */ });
+
+// 3. CREATE CLASS
+app.post('/api/admin/classes', async (req, res) => { /* ... code ... */ });
+
+// 4. CREATE SUBJECT
+app.post('/api/admin/subjects', async (req, res) => { /* ... code ... */ });
+
+// 5. CREATE TEACHER (Fixes the 404 error)
+app.post('/api/admin/teachers', async (req, res) => { /* ... code ... */ });
+
+// 6. UPDATE TEACHER PROFILE (Allows editing Login ID)
+app.put('/api/admin/teachers/:id', async (req, res) => { /* ... code ... */ });
+
+// 7. ASSIGN TEACHER TO SUBJECTS
+app.post('/api/admin/assignments', async (req, res) => { /* ... code ... */ });
+
+// 8. REMOVE ASSIGNMENT SCOPE
+app.delete('/api/admin/assignments', async (req, res) => { /* ... code ... */ });
+
+// 9. DELETE TEACHER ROW
+app.delete('/api/admin/teachers/:id', async (req, res) => { /* ... code ... */ });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server executing safely on port ${PORT}`));
