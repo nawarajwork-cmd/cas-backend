@@ -76,6 +76,30 @@ app.post('/api/admin/assign', authorizeGateway, requireAdmin, async (req, res) =
     }
 });
 
+// --- ADMIN DASHBOARD DATA (Checkpoint 2) ---
+app.get('/api/admin/dashboard-data', authorizeGateway, requireAdmin, async (req, res) => {
+    try {
+        const teachers = await pool.query('SELECT * FROM teachers');
+        const classes = await pool.query('SELECT * FROM classes');
+        const subjects = await pool.query('SELECT * FROM subjects');
+        const assignments = await pool.query(`
+            SELECT ta.id, t.username as teacher_name, s.name as subject_name 
+            FROM teacher_assignments ta
+            JOIN teachers t ON ta.teacher_id = t.id
+            JOIN subjects s ON ta.subject_id = s.id
+        `);
+
+        res.json({
+            teachers: teachers.rows,
+            classes: classes.rows,
+            subjects: subjects.rows,
+            assignments: assignments.rows
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    }
+});
+
 // --- EXISTING CORE ROUTES ---
 app.post('/api/marks/save', authorizeGateway, async (req, res) => {
     const { student_id, theme_id, score } = req.body;
