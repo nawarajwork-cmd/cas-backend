@@ -765,10 +765,6 @@ app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
     }
 });
 
-if (!grade) {
-  return res.status(400).json({ error: "Grade is required" });
-}
-
 // ================= CURRICULUM =================
 
 app.get('/api/curriculum',
@@ -1005,24 +1001,28 @@ async (req, res) => {
 });
 
 // ================= STUDENTS =================
-
 app.get('/api/students', authorizeGateway, async (req, res) => {
 
   const { grade } = req.query;
 
+  // ✅ PUT IT HERE (immediately after reading req.query)
   if (!grade) {
     return res.status(400).json({ error: "Grade is required" });
   }
 
   try {
     const students = await pool.query(`
-      SELECT * FROM students
+      SELECT *
+      FROM students
       WHERE grade_level = $1
       ORDER BY roll_number
     `, [grade]);
 
     const marks = await pool.query(`
-      SELECT m.student_id, m.theme_id, m.score
+      SELECT
+        m.student_id,
+        m.theme_id,
+        m.score
       FROM marks m
       JOIN students s ON s.id = m.student_id
       WHERE s.grade_level = $1
