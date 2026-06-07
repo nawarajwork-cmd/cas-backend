@@ -22,10 +22,11 @@ const authorizeGateway = (req, res, next) => {
     const header = req.headers['authorization'];
     const token = header && header.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Session unauthorized. Access Denied.' });
-	// This ensures that only users with the 'admin' role can proceed
+	// --- ROLE-BASED ACCESS GATEWAY ---
 const requireAdmin = (req, res, next) => {
+    // req.user is populated by authorizeGateway
     if (req.user && req.user.role === 'admin') {
-        next();
+        next(); // Proceed if admin
     } else {
         res.status(403).json({ error: 'Access Denied: Admin only.' });
     }
@@ -78,12 +79,16 @@ const requireAdmin = (req, res, next) => {
 
 // Inside your login route, after verifying the password:
 // Ensure your database query fetched the 'role' column from the users table
+// REPLACE your existing jwt.sign block with this:
 const token = jwt.sign(
-    { username: user.username, role: user.role }, // The 'role' is now included in the token
+    { 
+        username: user.username, 
+        role: user.role // Include the role from the DB record here
+    }, 
     JWT_SECRET, 
     { expiresIn: '8h' }
 );
-res.json({ token, role: user.role });
+res.json({ token, role: user.role }); // Send the role to the frontend
     } catch (err) {
         res.status(400).json({ error: `Database Engine Crash: ${err.message}` });
     }
