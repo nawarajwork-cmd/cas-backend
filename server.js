@@ -409,77 +409,72 @@ async (req, res) => {
 // ================= TEACHER CRUD =================
 
 // CREATE TEACHER
-app.post('/api/admin/teachers',
-authorizeGateway,
-async (req, res) => {
+app.post('/api/admin/teachers', authorizeGateway, async (req, res) => {
 
-    if(req.user.role !== 'ADMIN') {
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
 
-        return res.status(403).json({
-            error: 'Admin only'
-        });
+  const { full_name } = req.body;
+
+  try {
+    // 1. Find last teacher number safely
+    const result = await pool.query(`
+      SELECT username
+      FROM users
+      WHERE username LIKE 'T%'
+      ORDER BY id DESC
+      LIMIT 1
+    `);
+
+    let nextNumber = 1;
+
+    if (result.rows.length > 0) {
+      const last = result.rows[0].username; // e.g. T12
+      const num = parseInt(last.replace('T', ''));
+
+      if (!isNaN(num)) {
+        nextNumber = num + 1;
+      }
     }
 
-    const { full_name } = req.body;
+    const username = `T${nextNumber}`;
+    const password = '9876';
 
-    try {
+    const hash = await bcrypt.hash(password, 10);
 
-        const count =
-            await pool.query(`
-                SELECT COUNT(*)
-                FROM users
-                WHERE role = 'TEACHER'
-            `);
+    const insert = await pool.query(`
+      INSERT INTO users (
+        username,
+        password_hash,
+        full_name,
+        role
+      )
+      VALUES ($1, $2, $3, 'TEACHER')
+      RETURNING id, username, full_name, role
+    `, [
+      username,
+      hash,
+      full_name
+    ]);
 
-        const serial =
-            parseInt(count.rows[0].count) + 1;
+    res.json({
+      teacher: insert.rows[0],
+      password
+    });
 
-        const username = `T${serial}`;
-
-        const password = '9876';
-
-        const hash =
-            await bcrypt.hash(password, 10);
-
-        const result =
-            await pool.query(`
-                INSERT INTO users
-                (
-                    username,
-                    password_hash,
-                    full_name,
-                    role
-                )
-                VALUES
-                (
-                    $1,
-                    $2,
-                    $3,
-                    'TEACHER'
-                )
-                RETURNING
-                id,
-                username,
-                full_name,
-                role
-            `, [
-                username,
-                hash,
-                full_name
-            ]);
-
-        res.json({
-            teacher: result.rows[0],
-            password
-        });
-
-    } catch(err) {
-
-        res.status(500).json({
-            error: err.message
-        });
-    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+async function usernameExists(username) {
+  const res = await pool.query(
+    `SELECT 1 FROM users WHERE username = $1`,
+    [username]
+  );
+  return res.rows.length > 0;
+}
 
 // GET TEACHERS
 app.get('/api/admin/teachers',
@@ -731,12 +726,48 @@ async (req, res) => {
         });
 
     } catch(err) {
+app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
 
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  const { teacher_id, subject_id, grade_level } = req.body;
+
+  try {
+    // prevent duplicate assignment
+    const exists = await pool.query(`
+      SELECT 1 FROM teacher_subject_assignments
+      WHERE teacher_id=$1 AND subject_id=$2 AND grade_level=$3
+    `, [teacher_id, subject_id, grade_level]);
+
+    if (exists.rows.length > 0) {
+      return res.status(400).json({
+        error: 'Teacher already assigned to this subject'
+      });
+    }
+
+    await pool.query(`
+      INSERT INTO teacher_subject_assignments
+      (teacher_id, subject_id, grade_level)
+      VALUES ($1, $2, $3)
+    `, [teacher_id, subject_id, grade_level]);
+
+    res.json({ success: true });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
         res.status(500).json({
             error: err.message
         });
     }
 });
+
+if (!grade) {
+  return res.status(400).json({ error: "Grade is required" });
+}
 
 // ================= CURRICULUM =================
 
