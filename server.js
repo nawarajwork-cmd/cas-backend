@@ -15,7 +15,7 @@ const pool = new Pool({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'NEPAL_CAS_SYSTEM_CRYPT_KEY';
 
-// --- HELPERS: SQL State Management ---
+// --- SQL HELPER FUNCTIONS ---
 const getFullState = async () => {
     const res = await pool.query('SELECT data FROM system_state WHERE id = 1');
     return res.rows.length > 0 ? res.rows[0].data : { classes: {}, teachers: [], students: {} };
@@ -27,9 +27,23 @@ const saveFullState = async (state) => {
         ON CONFLICT (id) DO UPDATE SET data = $1`, [JSON.stringify(state)]);
 };
 
-// --- ROUTES ---
+// --- AUTH ROUTE ---
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const userQuery = await pool.query('SELECT * FROM users WHERE LOWER(username) = LOWER($1)', [username.trim()]);
+        const user = userQuery.rows[0];
+        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+            return res.status(400).json({ error: 'Invalid credentials.' });
+        }
+        const token = jwt.sign({ id: user.id, role: user.role, name: user.full_name }, JWT_SECRET, { expiresIn: '12h' });
+        res.json({ token, role: user.role, name: user.full_name });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- ADMIN STATE ROUTES ---
 app.get('/api/admin/database-state', async (req, res) => {
-    try { res.json(await getFullState()); } 
+    try { res.json(await getFullState()); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -38,11 +52,12 @@ app.post('/api/admin/database-state', async (req, res) => {
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- REMAINING CRUD ROUTES ---
 app.post('/api/admin/classes', async (req, res) => {
     try {
         const { className } = req.body;
         let state = await getFullState();
-        if (state.classes[className]) return res.status(400).json({ error: "Class exists." });
+        if (state.classes[className]) return res.status(400).json({ error: "Class already exists." });
         state.classes[className] = { subjects: {} };
         await saveFullState(state);
         res.json({ success: true, state });
