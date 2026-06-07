@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -243,6 +242,18 @@ async (req, res) => {
         username,
         password
     } = req.body;
+
+    // fixing bug that allows teacher to login selecting admin
+const { role } = req.body;
+
+if(role && role !== user.role) {
+
+    return res.status(403).json({
+        error: 'Invalid login role'
+    });
+}
+
+
 
     try {
 
