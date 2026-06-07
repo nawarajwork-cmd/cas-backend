@@ -23,6 +23,12 @@ const authorize = (role) => (req, res, next) => {
         next();
     });
 };
+const cors = require('cors');
+app.use(cors({
+    origin: "*", // Or replace * with "https://your-username.github.io"
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
 
 // Login Route
 app.post('/api/auth/login', async (req, res) => {
