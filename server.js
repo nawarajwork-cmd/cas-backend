@@ -790,63 +790,65 @@ app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
 // ================= CURRICULUM =================
 
 app.get(
-  '/api/teacher/chapters',
-  authorizeGateway,
-  async (req, res) => {
+'/api/teacher/chapters',
+authorizeGateway,
+
+async (req, res) => {
 
     try {
 
-      const teacherId = req.user.id;
+        const result =
+        await pool.query(`
 
-      const result = await pool.query(`
+            SELECT DISTINCT
 
-        SELECT DISTINCT
+                ch.id AS chapter_id,
 
-          ch.id AS chapter_id,
+                ch.chapter_name,
 
-          ch.chapter_name,
+                sub.subject_code,
 
-          sub.subject_code,
+                COALESCE(
+                    tcs.is_selected,
+                    false
+                ) AS is_selected
 
-          COALESCE(
-            tcs.is_selected,
-            false
-          ) AS is_selected
+            FROM teacher_subject_assignments tsa
 
-        FROM teacher_subject_assignments tsa
+            JOIN subjects sub
+            ON sub.id = tsa.subject_id
 
-        JOIN subjects sub
-        ON sub.id = tsa.subject_id
+            JOIN chapters ch
+            ON ch.subject_id = sub.id
 
-        JOIN chapters ch
-        ON ch.subject_id = sub.id
+            LEFT JOIN
+            teacher_chapter_selection tcs
 
-        LEFT JOIN teacher_chapter_selection tcs
-        ON
-          tcs.chapter_id = ch.id
-          AND
-          tcs.teacher_id = tsa.teacher_id
+            ON
+            tcs.chapter_id = ch.id
 
-        WHERE tsa.teacher_id = $1
+            AND
+            tcs.teacher_id = tsa.teacher_id
 
-        ORDER BY
-          sub.subject_code,
-          ch.chapter_name
+            WHERE tsa.teacher_id = $1
 
-      `, [teacherId]);
+            ORDER BY
+            sub.subject_code,
+            ch.chapter_name
 
-      res.json(result.rows);
+        `, [req.user.id]);
+
+        res.json(result.rows);
 
     } catch(err) {
 
-      console.log(err);
+        console.log(err);
 
-      res.status(500).json({
-        error: err.message
-      });
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
-
 app.get('/api/curriculum',
 authorizeGateway,
 async (req, res) => {
