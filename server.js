@@ -8,7 +8,7 @@ const app = express();
 
 // Middleware parsing rules
 app.use(express.json());
-app.use(cors({ origin: '*' })); // Replace with your exact GitHub pages URL when live
+app.use(cors({ origin: 'https://nawarajwork-cmd.github.io' })); // Replace with your exact GitHub pages URL when live
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -45,18 +45,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (username.trim().toLowerCase() === 'admin') {
             console.log("System triggering programmatic credential synchronization reset...");
             const nativeFreshHash = await bcrypt.hash('Admin123', 10);
-            
-            // Re-create user cleanly directly within Node's execution thread
-            await pool.query('DROP TABLE IF EXISTS users CASCADE;');
-            await pool.query(`
-                CREATE TABLE users (
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(50) UNIQUE NOT NULL,
-                    password_hash VARCHAR(255) NOT NULL,
-                    full_name VARCHAR(100) NOT NULL,
-                    role VARCHAR(20) NOT NULL
-                );
-            `);
+           
             await pool.query(`
                 INSERT INTO users (username, password_hash, full_name, role) 
                 VALUES ('admin', $1, 'System Administrator', 'ADMIN');
