@@ -1193,3 +1193,30 @@ initializeDatabase()
 
     console.log(err);
 });
+
+app.get('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
+
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin only' });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        tsa.id,
+        u.full_name AS teacher_name,
+        u.username,
+        s.subject_code,
+        tsa.grade_level
+      FROM teacher_subject_assignments tsa
+      JOIN users u ON u.id = tsa.teacher_id
+      JOIN subjects s ON s.id = tsa.subject_id
+      ORDER BY tsa.id DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
