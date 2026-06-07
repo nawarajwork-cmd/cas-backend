@@ -48,6 +48,35 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ... [Keep your other endpoints here]
+// ...if they are an ADMIN, they see everything; if they are a TEACHER, the query joins with the assignment table to restrict the results.
+app.get('/api/curriculum', authorizeGateway, async (req, res) => {
+    const { grade } = req.query;
+    try {
+        let query = `
+            SELECT sub.id as subject_id, sub.subject_code, ch.id as chapter_id, ch.chapter_name, ch.is_active, th.id as theme_id, th.theme_name
+            FROM subjects sub
+            LEFT JOIN chapters ch ON ch.subject_id = sub.id
+            LEFT JOIN themes th ON th.chapter_id = ch.id
+            WHERE sub.grade_level = $1
+        `;
+        const params = [grade];
+
+        // Apply filtering if the user is a teacher
+        if (req.user.role === 'TEACHER') {
+            query += ` AND sub.id IN (
+                SELECT subject_id FROM teacher_assignments WHERE user_id = $2
+            )`;
+            params.push(req.user.id);
+        }
+
+        query += ` ORDER BY sub.subject_code, ch.sort_order, th.sort_order`;
+        const data = await pool.query(query, params);
+        res.json(data.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
     if (req.user.role !== 'ADMIN') return res.status(403).json({ error: 'Access Denied.' });
     
