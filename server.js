@@ -8,26 +8,16 @@ const jwt = require('jsonwebtoken');
 const app = express();
 
 // ================= MIDDLEWARE =================
-app.use(express.json()); // IMPORTANT for login body
-
-const allowedOrigins = [
-  "https://nawarajwork-cmd.github.io",
-  "http://localhost:3000"
-];
+app.use(express.json());
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, false); // safer than throwing error
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  origin: [
+    "https://nawarajwork-cmd.github.io",
+    "http://localhost:3000"
+  ],
+  credentials: true
 }));
 
-// IMPORTANT: handle preflight requests
 app.options("*", cors());
 
 // ================= ROUTES =================
@@ -265,7 +255,7 @@ async (req, res) => {
         password
     } = req.body;
 
-    // fixing bug that allows teacher to login selecting admin
+    /*fixing bug that allows teacher to login selecting admin
 const { role } = req.body;
 
 if(role && role !== user.role) {
@@ -273,7 +263,7 @@ if(role && role !== user.role) {
     return res.status(403).json({
         error: 'Invalid login role'
     });
-}
+}*/
 
 
 
