@@ -7,12 +7,15 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
-app.use(express.json());
+app.get('/', (req, res) => {
+    res.send('Backend Running');
+});
 
 app.use(cors({
     origin: 'https://nawarajwork-cmd.github.io',
     credentials: true
 }));
+
 
 // ================= DATABASE =================
 
