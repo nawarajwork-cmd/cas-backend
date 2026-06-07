@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin: ' https://nawarajwork-cmd.github.io',
+    origin: 'https://nawarajwork-cmd.github.io',
     credentials: true
 }));
 
