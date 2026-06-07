@@ -4,13 +4,11 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-import cors from "cors";
-app.use(cors());
+
 const app = express();
 
-app.get('/', (req, res) => {
-    res.send('Backend Running');
-});
+// ================= MIDDLEWARE =================
+app.use(express.json()); // IMPORTANT for login body
 
 const allowedOrigins = [
   "https://nawarajwork-cmd.github.io",
@@ -22,11 +20,20 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      callback(null, false); // safer than throwing error
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 }));
+
+// IMPORTANT: handle preflight requests
+app.options("*", cors());
+
+// ================= ROUTES =================
+app.get('/', (req, res) => {
+  res.send('Backend Running');
+});
 
 
 // ================= DATABASE =================
