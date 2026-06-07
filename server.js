@@ -48,5 +48,18 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // ... [Keep your other endpoints here]
-
+app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
+    if (req.user.role !== 'ADMIN') return res.status(403).json({ error: 'Access Denied.' });
+    
+    const { user_id, subject_id, grade_level } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO teacher_assignments (user_id, subject_id, grade_level) VALUES ($1, $2, $3)',
+            [user_id, subject_id, grade_level]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Assignment failed: ' + err.message });
+    }
+});
 app.listen(process.env.PORT || 3000);
