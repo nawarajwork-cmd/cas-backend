@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 import cors from "cors";
-
+app.use(cors());
 const app = express();
 
 app.get('/', (req, res) => {
