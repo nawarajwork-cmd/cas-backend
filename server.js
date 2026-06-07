@@ -767,6 +767,36 @@ app.post('/api/admin/assign-teacher', authorizeGateway, async (req, res) => {
 
 // ================= CURRICULUM =================
 
+app.get('/api/teacher/chapters', authorizeGateway, async (req, res) => {
+
+  const teacherId = req.user.id;
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.id AS chapter_id,
+        c.chapter_name,
+        s.subject_code,
+        COALESCE(tcs.is_selected, false) AS is_selected
+      FROM chapters c
+      JOIN subjects s ON s.id = c.subject_id
+      JOIN teacher_subject_assignments tsa 
+        ON tsa.subject_id = s.id
+      LEFT JOIN teacher_chapter_selection tcs
+        ON tcs.chapter_id = c.id
+        AND tcs.teacher_id = tsa.teacher_id
+      WHERE tsa.teacher_id = $1
+      ORDER BY c.id
+    `, [teacherId]);
+
+    res.json(result.rows);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.get('/api/curriculum',
 authorizeGateway,
 async (req, res) => {
