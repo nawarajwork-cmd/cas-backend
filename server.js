@@ -39,9 +39,44 @@ const requireAdmin = (req, res, next) => {
 };
 
 
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Missing username or password fields.' });
+    }
+
+    try {
+        // Query the database to find the user
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
+        }
+
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
+        }
+
+        // Generate JWT with role
+        const token = jwt.sign(
+            { username: user.username, role: user.role }, 
+            JWT_SECRET, 
+            { expiresIn: '8h' }
+        );
+
+        res.json({ token, role: user.role });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error.' });
+    }
+});
 
 //--- AUTH ROUTE WITH SYSTEM VALIDATION FIX ---
- app.post('/api/auth/login', async (req, res) => {
+ /*app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     
     if (!username || !password) {
@@ -75,7 +110,7 @@ const requireAdmin = (req, res, next) => {
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
         if (!isPasswordValid) {
             return res.status(400).json({ error: 'Database check failed: Password hash encryption mismatch.' });
-        }
+        }*/
 
 // Inside your login route, after verifying the password:
 // Ensure your database query fetched the 'role' column from the users table
