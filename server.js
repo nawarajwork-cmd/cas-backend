@@ -955,41 +955,28 @@ async (req, res) => {
 
         } else {
 
-            query = `
-                SELECT
-                    sub.id as subject_id,
-                    sub.subject_code,
-                    ch.id as chapter_id,
-                    ch.chapter_name,
-                    ch.is_active,
-                    th.id as theme_id,
-                    th.theme_name
+           query = `
+    SELECT
+        sub.id as subject_id,
+        sub.subject_code,
+        ch.id as chapter_id,
+        ch.chapter_name,
+        ch.is_active,
+        th.id as theme_id,
+        th.theme_name,
+        COALESCE(tcs.is_selected, false) AS is_selected
 
-                FROM teacher_subject_assignments tsa
+    FROM teacher_subject_assignments tsa
+    JOIN subjects sub ON sub.id = tsa.subject_id
+    LEFT JOIN chapters ch ON ch.subject_id = sub.id
+    LEFT JOIN themes th ON th.chapter_id = ch.id
+    LEFT JOIN teacher_chapter_selection tcs
+        ON tcs.chapter_id = ch.id AND tcs.teacher_id = $1
 
-                JOIN subjects sub
-                ON sub.id = tsa.subject_id
-
-                LEFT JOIN chapters ch
-                ON ch.subject_id = sub.id
-
-                LEFT JOIN themes th
-                ON th.chapter_id = ch.id
-
-                WHERE
-                    tsa.teacher_id = $1
-                    AND sub.grade_level = $2
-
-                ORDER BY
-                    sub.subject_code,
-                    ch.sort_order,
-                    th.sort_order
-            `;
-
-            params = [
-                req.user.id,
-                grade
-            ];
+    WHERE tsa.teacher_id = $1 AND sub.grade_level = $2
+    ORDER BY sub.subject_code, ch.sort_order, th.sort_order
+`;
+params = [req.user.id, grade];
         }
 
         const result =
