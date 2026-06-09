@@ -849,6 +849,69 @@ async (req, res) => {
         });
     }
 });
+
+app.post(
+'/api/teacher/chapter-toggle',
+authorizeGateway,
+
+async (req, res) => {
+
+    const {
+        chapter_id,
+        is_selected
+    } = req.body;
+
+    try {
+
+        await pool.query(`
+
+            INSERT INTO
+            teacher_chapter_selection
+            (
+                teacher_id,
+                chapter_id,
+                is_selected
+            )
+
+            VALUES
+            (
+                $1,
+                $2,
+                $3
+            )
+
+            ON CONFLICT
+            (
+                teacher_id,
+                chapter_id
+            )
+
+            DO UPDATE
+            SET
+            is_selected =
+            EXCLUDED.is_selected
+
+        `, [
+
+            req.user.id,
+
+            chapter_id,
+
+            is_selected
+        ]);
+
+        res.json({
+            success:true
+        });
+
+    } catch(err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
 app.get('/api/curriculum',
 authorizeGateway,
 async (req, res) => {
@@ -1042,6 +1105,68 @@ async (req, res) => {
     }
 });
 
+app.put(
+'/api/curriculum/chapter/:id',
+authorizeGateway,
+
+async (req, res) => {
+
+    const { chapter_name } = req.body;
+
+    try {
+
+        await pool.query(`
+            UPDATE chapters
+            SET chapter_name = $1
+            WHERE id = $2
+        `, [
+            chapter_name,
+            req.params.id
+        ]);
+
+        res.json({
+            success:true
+        });
+
+    } catch(err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.put(
+'/api/curriculum/theme/:id',
+authorizeGateway,
+
+async (req, res) => {
+
+    const { theme_name } = req.body;
+
+    try {
+
+        await pool.query(`
+            UPDATE themes
+            SET theme_name = $1
+            WHERE id = $2
+        `, [
+            theme_name,
+            req.params.id
+        ]);
+
+        res.json({
+            success:true
+        });
+
+    } catch(err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
 app.put('/api/curriculum/theme/:id', authorizeGateway, async (req, res) => {
 
   const { theme_name } = req.body;
@@ -1092,13 +1217,18 @@ async (req, res) => {
 });
 
 // DELETE CURRICULUM NODE
-app.delete('/api/curriculum/:type/:id',
+app.delete(
+'/api/curriculum/:type/:id',
 authorizeGateway,
+
 async (req, res) => {
 
     const map = {
+
         subject: 'subjects',
+
         chapter: 'chapters',
+
         theme: 'themes'
     };
 
@@ -1110,7 +1240,7 @@ async (req, res) => {
         `, [req.params.id]);
 
         res.json({
-            success: true
+            success:true
         });
 
     } catch(err) {
