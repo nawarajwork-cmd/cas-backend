@@ -120,6 +120,10 @@ async function initializeDatabase() {
             sort_order INTEGER DEFAULT 0
         );
     `);
+  await pool.query(`
+    ALTER TABLE chapters
+    ADD COLUMN IF NOT EXISTS is_selected BOOLEAN DEFAULT false
+`);
 
     // THEMES
     await pool.query(`
@@ -850,7 +854,7 @@ async (req, res) => {
     }
 });
 
-app.post(
+app.post(app.post(
 '/api/teacher/chapter-toggle',
 authorizeGateway,
 
@@ -864,40 +868,12 @@ async (req, res) => {
     try {
 
         await pool.query(`
-
-            INSERT INTO
-            teacher_chapter_selection
-            (
-                teacher_id,
-                chapter_id,
-                is_selected
-            )
-
-            VALUES
-            (
-                $1,
-                $2,
-                $3
-            )
-
-            ON CONFLICT
-            (
-                teacher_id,
-                chapter_id
-            )
-
-            DO UPDATE
-            SET
-            is_selected =
-            EXCLUDED.is_selected
-
+            UPDATE chapters
+            SET is_selected = $1
+            WHERE id = $2
         `, [
-
-            req.user.id,
-
-            chapter_id,
-
-            is_selected
+            is_selected,
+            chapter_id
         ]);
 
         res.json({
@@ -932,6 +908,7 @@ async (req, res) => {
                     ch.id as chapter_id,
                     ch.chapter_name,
                     ch.is_active,
+                    ch.is_selected,
                     th.id as theme_id,
                     th.theme_name
 
