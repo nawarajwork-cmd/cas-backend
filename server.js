@@ -932,7 +932,6 @@ async (req, res) => {
                     ch.id as chapter_id,
                     ch.chapter_name,
                     ch.is_active,
-                    ch.is_selected,
                     th.id as theme_id,
                     th.theme_name
 
@@ -940,7 +939,6 @@ async (req, res) => {
 
                LEFT JOIN chapters ch
 ON ch.subject_id = sub.id
-AND ch.is_selected = true
 
                 LEFT JOIN themes th
                 ON th.chapter_id = ch.id
