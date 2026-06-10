@@ -865,27 +865,34 @@ async (req, res) => {
         is_selected
     } = req.body;
 
-    try {
+   try {
 
-        await pool.query(`
-            UPDATE chapters
-            SET is_selected = $1
-            WHERE id = $2
-        `, [
-            is_selected,
-            chapter_id
-        ]);
+    console.log(req.body);
 
-        res.json({
-            success:true
-        });
+    const result = await pool.query(`
+        UPDATE chapters
+        SET is_selected = $1
+        WHERE id = $2
+        RETURNING *
+    `, [
+        is_selected,
+        chapter_id
+    ]);
 
-    } catch(err) {
+    console.log(result.rows);
 
-        res.status(500).json({
-            error: err.message
-        });
-    }
+    res.json({
+        success:true
+    });
+
+} catch(err) {
+
+    console.error(err);
+
+    res.status(500).json({
+        error: err.message
+    });
+}
 });
 
 app.get('/api/curriculum',
