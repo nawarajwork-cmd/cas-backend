@@ -854,7 +854,7 @@ async (req, res) => {
     }
 });
 
-app.post(app.post(
+app.post(
 '/api/teacher/chapter-toggle',
 authorizeGateway,
 
